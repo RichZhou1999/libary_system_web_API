@@ -11,31 +11,18 @@ class Borrow_book(Resource):
     required=True)
 
     def post(self,username):
-
         user = User.find_by_username(username)
         if not user:
             return jsonify({
                 "message":" User not exist",
                 "state": "404"
             })
-
         data = Borrow_book.parser.parse_args()
-        book = Book.find_by_bid(data["bid"])
+        book = Book.find_by_bid_state(data["bid"],0)
         if not book:
             return jsonify({
-                "message":" This book has been borrowed",
+                "message":" This book is not available",
                 "state":400
             })
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
-        sql_q = "PRAGMA foreign_keys = ON"
-        cursor.execute(sql_q)
-        user = User.find_by_username(username)
-        insert_query = "INSERT INTO history Values(?,?,?,NULL)"
-        #data = ("3",'Harryp', 'JK', '10', '1')
-        cursor.execute(insert_query,(data["bid"],1,str(time.time())))
-        update_query = "Update books Set state = 1 Where bid = %s"%(data["bid"])
-        cursor.execute(update_query)
-        connection.commit()
-        connection.close()
-        return {"message":"succeed "},201
+        result = Book.borrow_book_logic(username,data["bid"])
+        return jsonify(result)
